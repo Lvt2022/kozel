@@ -297,7 +297,7 @@ function Standings({
             </tr>
           </thead>
           <tbody>
-            {roundHistory.map((entry) => (
+            {(roundHistory ?? []).map((entry) => (
               <tr key={entry.roundNumber}>
                 <td>
                   {entry.roundNumber}
