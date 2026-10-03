@@ -1,0 +1,814 @@
+:root {
+  --wood-dark: #2b1b12;
+  --wood: #4a2f1f;
+  --wood-light: #6b4530;
+  --felt: #0b4d2e;
+  --felt-dark: #082c1a;
+  --brass: #d9a441;
+  --brass-bright: #ffce54;
+  --brass-dark: #8a5a1a;
+  --parchment: #f3e6c8;
+  --parchment-dark: #e4d2a4;
+  --ink: #241409;
+  --red: #a5281f;
+  --red-bright: #d4382c;
+  --font-pixel: 'Press Start 2P', 'Courier New', monospace;
+  --font-retro: 'VT323', 'Courier New', monospace;
+
+  /* Card size scales with viewport width (desktop-first for now — mobile gets its own layout later). */
+  --card-w: clamp(62px, 6.2vw, 128px);
+  --card-h: calc(var(--card-w) * 1.4516); /* matches the sprite sheet's card aspect ratio */
+  --card-small-w: calc(var(--card-w) * 0.68);
+  --card-small-h: calc(var(--card-h) * 0.68);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-retro);
+  font-size: 1.25rem;
+  line-height: 1.35;
+  color: var(--parchment);
+  background-color: var(--wood-dark);
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0 2px, transparent 2px 38px),
+    linear-gradient(180deg, var(--wood) 0%, var(--wood-dark) 100%);
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Subtle CRT scanline overlay for the 90s monitor feel. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1000;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.12) 0px,
+    rgba(0, 0, 0, 0.12) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  mix-blend-mode: multiply;
+  opacity: 0.5;
+}
+
+h1,
+h2 {
+  font-family: var(--font-pixel);
+  line-height: 1.6;
+}
+
+h1 {
+  font-size: 1.3rem;
+  text-shadow: 3px 3px 0 var(--ink);
+}
+
+h2 {
+  font-size: 0.95rem;
+  text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.3);
+}
+
+.screen {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+  position: relative;
+}
+
+.game-screen {
+  max-width: min(1600px, 96vw);
+}
+
+.screen--centered {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.screen__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--brass-bright);
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 4px solid var(--wood-light);
+}
+
+.screen__header h1 {
+  margin: 0;
+  color: var(--brass-bright);
+}
+
+.screen__header h1::before {
+  content: '🍺 ';
+}
+
+.screen__header h1::after {
+  content: ' 🐐';
+}
+
+.panel {
+  background: var(--parchment);
+  color: var(--ink);
+  border: 4px solid var(--ink);
+  border-radius: 2px;
+  padding: 22px;
+  margin-bottom: 20px;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.45);
+}
+
+.panel h2 {
+  margin-top: 0;
+  color: var(--wood);
+}
+
+.panel--center {
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+input {
+  font-family: var(--font-retro);
+  font-size: 1.3rem;
+  padding: 8px 10px;
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  background: #fffceb;
+  color: var(--ink);
+  box-shadow: inset 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+input:focus {
+  outline: 3px solid var(--brass);
+  outline-offset: 1px;
+}
+
+button {
+  font-family: var(--font-pixel);
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+  padding: 12px 16px;
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  background: var(--brass);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.05s ease, box-shadow 0.05s ease, background 0.1s ease;
+}
+
+button:hover:not(:disabled) {
+  background: var(--brass-bright);
+}
+
+button:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--ink);
+}
+
+button:disabled {
+  background: #93907c;
+  color: #55523f;
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.35);
+  cursor: not-allowed;
+}
+
+.secondary-button {
+  background: var(--wood-light);
+  color: var(--parchment);
+  border-color: var(--ink);
+}
+
+.secondary-button:hover:not(:disabled) {
+  background: var(--wood);
+}
+
+.link-button {
+  font-family: var(--font-retro);
+  font-size: 1.1rem;
+  text-transform: none;
+  letter-spacing: normal;
+  background: transparent;
+  color: var(--brass-bright);
+  text-decoration: underline;
+  border: none;
+  box-shadow: none;
+  padding: 4px;
+}
+
+.link-button:hover:not(:disabled) {
+  background: transparent;
+  color: var(--parchment);
+  transform: none;
+}
+
+.link-button:active:not(:disabled) {
+  transform: none;
+  box-shadow: none;
+}
+
+.muted {
+  color: #6b5d45;
+  font-size: 1.05rem;
+}
+
+.trick-area .muted {
+  color: var(--parchment-dark);
+  font-size: 1.3rem;
+}
+
+.player-badge {
+  font-family: var(--font-pixel);
+  font-size: 0.6rem;
+  color: var(--ink);
+  background: var(--brass);
+  border: 2px solid var(--ink);
+  padding: 6px 10px;
+}
+
+.room-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.room-list__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 4px;
+  border-bottom: 2px dashed var(--wood-light);
+}
+
+.room-list__item:last-child {
+  border-bottom: none;
+}
+
+.seat-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 18px;
+}
+
+.seat {
+  display: flex;
+  gap: 10px;
+  padding: 10px 6px;
+  border-bottom: 2px dashed var(--parchment-dark);
+  font-size: 1.3rem;
+}
+
+.seat__index {
+  font-family: var(--font-pixel);
+  font-size: 0.8rem;
+  color: var(--wood);
+}
+
+.seat--empty {
+  opacity: 0.6;
+}
+
+.seat--occupied {
+  color: var(--ink);
+  font-weight: bold;
+}
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-pixel);
+  font-size: 0.55rem;
+  background: var(--brass-bright);
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  padding: 4px 8px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.badge--warning {
+  background: var(--red-bright);
+  color: var(--parchment);
+}
+
+.error-banner {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--red);
+  color: var(--parchment);
+  font-family: var(--font-retro);
+  font-size: 1.3rem;
+  padding: 12px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 4px solid var(--ink);
+}
+
+.error-banner::before {
+  content: '⚠ ';
+}
+
+.error-banner button {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  color: var(--parchment);
+  font-family: var(--font-pixel);
+  font-size: 0.8rem;
+}
+
+.error-banner button:hover {
+  color: var(--brass-bright);
+}
+
+/* Game table */
+.table {
+  position: relative;
+  background-color: var(--felt);
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.03) 0 10px,
+    rgba(0, 0, 0, 0.04) 10px 20px
+  );
+  border: 10px solid var(--wood);
+  border-image: repeating-linear-gradient(100deg, var(--wood-light) 0 8px, var(--wood) 8px 18px) 10;
+  border-radius: 20px;
+  height: clamp(440px, 60vh, 780px);
+  margin-bottom: 20px;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.6), 8px 8px 0 rgba(0, 0, 0, 0.5);
+}
+
+.player-slot {
+  position: absolute;
+  color: var(--parchment);
+  text-align: center;
+  min-width: 150px;
+}
+
+.player-slot__name {
+  display: inline-block;
+  font-family: var(--font-pixel);
+  font-size: clamp(0.65rem, 0.9vw, 0.95rem);
+  background: var(--wood);
+  border: 2px solid var(--ink);
+  padding: 6px 10px;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+}
+
+.player-slot__meta {
+  display: flex;
+  flex-direction: column;
+  font-size: clamp(1.05rem, 1.1vw, 1.4rem);
+  margin-top: 6px;
+  text-shadow: 1px 1px 0 var(--ink);
+}
+
+.player-slot--turn .player-slot__name {
+  background: var(--brass);
+  color: var(--ink);
+  animation: turn-glow 1s ease-in-out infinite;
+}
+
+@keyframes turn-glow {
+  0%, 100% {
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5), 0 0 0 2px var(--brass-bright);
+  }
+  50% {
+    box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5), 0 0 10px 4px var(--brass-bright);
+  }
+}
+
+.player-slot--kozel .player-slot__name {
+  outline: 2px dashed var(--brass-bright);
+  outline-offset: 2px;
+}
+
+.player-slot--bottom {
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.player-slot--top {
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.player-slot--left {
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.player-slot--right {
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.trick-area {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--parchment);
+  font-family: var(--font-retro);
+  font-size: 1.3rem;
+}
+
+.trick-card {
+  position: absolute;
+}
+
+.trick-card--bottom {
+  transform: translateY(calc(var(--card-h) * 0.667));
+}
+
+.trick-card--top {
+  transform: translateY(calc(var(--card-h) * -0.667));
+}
+
+.trick-card--left {
+  transform: translateX(calc(var(--card-w) * -1.452));
+}
+
+.trick-card--right {
+  transform: translateX(calc(var(--card-w) * 1.452));
+}
+
+.trick-card--winner .card {
+  outline: 3px solid var(--brass-bright);
+  outline-offset: 2px;
+  box-shadow: 0 0 16px 4px rgba(255, 206, 84, 0.85);
+  transform: scale(1.1);
+  z-index: 2;
+}
+
+.trick-winner-banner {
+  /* Own row below .table (not inside the trick area, which the trick cards fill edge-to-edge
+     at larger card sizes) — reserves its height even while empty so nothing jumps between
+     tricks. */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.6em;
+  text-align: center;
+  background: var(--parchment);
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 0.6rem;
+  padding: 8px 12px;
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
+  margin-bottom: 20px;
+}
+
+.trick-winner-banner:not(:empty) {
+  animation: kozel-pulse 1s ease-in-out infinite;
+}
+
+.player-slot--trick-winner .player-slot__name {
+  background: var(--brass-bright);
+  color: var(--ink);
+  outline: 2px solid var(--brass-bright);
+  outline-offset: 3px;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5), 0 0 12px 3px rgba(255, 206, 84, 0.8);
+}
+
+.trick-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  background: var(--brass);
+  color: var(--ink);
+  font-size: 0.5rem;
+  font-family: var(--font-pixel);
+  border: 1px solid var(--ink);
+}
+
+.hand {
+  background: var(--wood);
+  border: 4px solid var(--ink);
+  padding: 18px;
+  text-align: center;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.45);
+}
+
+.hand h2 {
+  color: var(--brass-bright);
+  margin-top: 0;
+}
+
+.hand__cards {
+  display: flex;
+  gap: clamp(8px, 1vw, 18px);
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.card {
+  position: relative;
+  width: var(--card-w);
+  height: var(--card-h);
+  border-radius: 4px;
+  border: 3px solid var(--ink);
+  background: #fffceb;
+  font-family: var(--font-pixel);
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform 0.05s ease;
+}
+
+.card:hover:not(:disabled) {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.card__art {
+  position: absolute;
+  inset: 3px;
+  display: block;
+  overflow: hidden;
+  border-radius: 2px;
+}
+
+.card--small {
+  width: var(--card-small-w);
+  height: var(--card-small-h);
+  border-width: 2px;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.card--small .card__art {
+  inset: 2px;
+}
+
+.card:disabled {
+  background: #fffceb;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.card--disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.card--highlight {
+  outline: 3px solid var(--brass-bright);
+  outline-offset: 2px;
+}
+
+.card--kozel {
+  box-shadow: 3px 3px 0 var(--ink), 0 0 0 3px var(--brass-bright), 0 0 10px 2px rgba(255, 206, 84, 0.8);
+}
+
+.card--back {
+  background-image: url('/cards/card-back-kozel.jpg');
+  background-size: cover;
+  background-position: center;
+  border: 3px solid var(--ink);
+  cursor: default;
+}
+
+.score-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 18px 0;
+  background: var(--felt-dark);
+  color: #d8ffd8;
+  font-size: 1.3rem;
+  border: 3px solid var(--ink);
+}
+
+.score-table th {
+  font-family: var(--font-pixel);
+  font-size: 0.55rem;
+  color: var(--brass-bright);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.score-table th,
+.score-table td {
+  padding: 10px;
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.15);
+  text-align: left;
+}
+
+.score-table__row--loser {
+  background: rgba(165, 40, 31, 0.5);
+  font-weight: bold;
+  color: #ffe4e1;
+}
+
+.countdown {
+  font-family: var(--font-pixel);
+  font-size: 1rem;
+  margin-bottom: 14px;
+  color: var(--red);
+}
+
+.kozel-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: linear-gradient(90deg, var(--brass), var(--brass-bright));
+  color: var(--ink);
+  font-family: var(--font-pixel);
+  font-size: 0.8rem;
+  padding: 14px 16px;
+  border: 3px solid var(--ink);
+  margin-bottom: 20px;
+  box-shadow: 5px 5px 0 rgba(0, 0, 0, 0.45);
+  animation: kozel-pulse 1.6s ease-in-out infinite;
+}
+
+.kozel-banner__icon {
+  font-size: 1.6rem;
+}
+
+@keyframes kozel-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.kozel-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 6px;
+  background: var(--red-bright);
+  color: var(--parchment);
+  font-size: 0.5rem;
+  font-family: var(--font-pixel);
+  border: 1px solid var(--ink);
+}
+
+.my-tricks {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.my-tricks__trick {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+/* Game layout: table/hand on the left, player standings sidebar on the right. */
+.game-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.game-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.sidebar {
+  flex: 0 0 260px;
+  background: var(--parchment);
+  color: var(--ink);
+  border: 4px solid var(--ink);
+  border-radius: 2px;
+  padding: 16px;
+  box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.45);
+  position: sticky;
+  top: 16px;
+}
+
+.sidebar h2 {
+  margin: 0 0 12px;
+  color: var(--wood);
+  font-size: 0.85rem;
+}
+
+.sidebar__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.sidebar__table th,
+.sidebar__table td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 2px solid var(--wood-light);
+}
+
+.sidebar__table th {
+  font-family: var(--font-pixel);
+  font-size: 0.6rem;
+  color: var(--wood);
+}
+
+.sidebar__table tr.sidebar__row--turn {
+  background: var(--brass);
+}
+
+/* Face-down trick pile shown at a player's seat on the table. */
+.trick-pile {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.trick-pile__count {
+  font-family: var(--font-pixel);
+  font-size: 0.8rem;
+}
+
+@media (max-width: 860px) {
+  .game-layout {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    flex-basis: auto;
+    width: 100%;
+    position: static;
+  }
+}
+
+/* Rules modal, reachable from a floating button on any screen. */
+.rules-button {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 500;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1500;
+}
+
+.modal {
+  position: relative;
+  max-width: 640px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.modal h2 {
+  margin-top: 0;
+}
+
+.modal h3 {
+  color: var(--wood);
+  font-family: var(--font-pixel);
+  font-size: 0.75rem;
+  margin: 18px 0 8px;
+}
+
+.modal ul {
+  margin: 0 0 4px;
+  padding-left: 22px;
+}
+
+.modal li {
+  margin-bottom: 6px;
+}
+
+.modal__close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
