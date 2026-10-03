@@ -110,11 +110,13 @@ h2 {
 }
 
 .screen__header h1::before {
-  content: '🍺 ';
+  content: '🍺';
+  margin-right: 0.35em;
 }
 
 .screen__header h1::after {
-  content: ' 🐐';
+  content: '🐐';
+  margin-left: 0.35em;
 }
 
 .panel {
@@ -372,6 +374,26 @@ button:disabled {
   box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
 }
 
+/* Groups the name tag with that player's trick pile so it's unambiguous whose pile is whose.
+   Direction flips per seat so the pile sits above the avatar (bottom/left/right seats) or beside
+   it (top seat, which already sits at the very top edge with no room above). */
+.player-slot__top-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.player-slot--bottom .player-slot__top-row,
+.player-slot--left .player-slot__top-row,
+.player-slot--right .player-slot__top-row {
+  flex-direction: column-reverse;
+}
+
+.player-slot--top .player-slot__top-row {
+  flex-direction: row;
+}
+
 .player-slot__meta {
   display: flex;
   flex-direction: column;
@@ -437,6 +459,10 @@ button:disabled {
 
 .trick-card {
   position: absolute;
+  /* The highlight (scale 1.1 on .trick-card--winner .card) shows first; only once the player has
+     had a moment to see who won does the whole trick collect itself toward that player's pile. */
+  transition: transform 0.9s ease-in, opacity 0.9s ease-in;
+  transition-delay: 0.7s;
 }
 
 .trick-card--bottom {
@@ -463,26 +489,46 @@ button:disabled {
   z-index: 2;
 }
 
+/* Once a trick is won, all 4 cards fly toward the winner's pile corner together, regardless of
+   which seat originally played them — the per-seat spread above no longer matters once collected. */
+.trick-card--collect-bottom {
+  transform: translate(0, 220%) scale(0.4);
+  opacity: 0;
+}
+
+.trick-card--collect-top {
+  transform: translate(60%, -220%) scale(0.4);
+  opacity: 0;
+}
+
+.trick-card--collect-left {
+  transform: translate(-220%, 0) scale(0.4);
+  opacity: 0;
+}
+
+.trick-card--collect-right {
+  transform: translate(220%, 0) scale(0.4);
+  opacity: 0;
+}
+
 .trick-winner-banner {
-  /* Own row below .table (not inside the trick area, which the trick cards fill edge-to-edge
-     at larger card sizes) — reserves its height even while empty so nothing jumps between
-     tricks. */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.6em;
+  /* Thrown across the middle of the table itself for the brief reveal window, instead of
+     reserving a permanent row below it — it only exists in the DOM while trickComplete is true,
+     so there's no empty state to worry about. */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 8;
+  max-width: 80%;
   text-align: center;
   background: var(--parchment);
   color: var(--ink);
   font-family: var(--font-pixel);
   font-size: 0.6rem;
-  padding: 8px 12px;
+  padding: 10px 16px;
   border: 2px solid var(--ink);
-  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
-  margin-bottom: 20px;
-}
-
-.trick-winner-banner:not(:empty) {
+  box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5), 0 0 20px 6px rgba(255, 206, 84, 0.35);
   animation: kozel-pulse 1s ease-in-out infinite;
 }
 
@@ -690,6 +736,10 @@ button:disabled {
 
 .game-main {
   flex: 1 1 auto;
+  /* Without an explicit width, this column's width followed its content (the table/hand), so a
+     hand with few cards made the whole play area narrower instead of always filling the space
+     next to the sidebar. */
+  width: 100%;
   min-width: 0;
 }
 
@@ -734,16 +784,30 @@ button:disabled {
   background: var(--brass);
 }
 
-/* Face-down trick pile shown at a player's seat on the table. */
+/* Face-down trick pile, grouped with its owner's name tag via .player-slot__top-row above so
+   there's no ambiguity about whose pile is whose. */
 .trick-pile {
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding: 4px 6px;
+  background: rgba(8, 44, 26, 0.75);
+  border: 2px solid var(--brass-dark);
+  border-radius: 4px;
+  z-index: 5;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.trick-pile--just-won {
+  border-color: var(--brass-bright);
+  box-shadow: 0 0 14px 4px rgba(255, 206, 84, 0.8);
+  animation: kozel-pulse 0.9s ease-in-out infinite;
 }
 
 .trick-pile__count {
   font-family: var(--font-pixel);
   font-size: 0.8rem;
+  color: var(--parchment);
 }
 
 @media (max-width: 860px) {
@@ -758,13 +822,64 @@ button:disabled {
   }
 }
 
-/* Rules modal, reachable from a floating button on any screen. */
-.rules-button {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  z-index: 500;
+/* Phones: the table's corner player slots and the centered trick cards fought for the same
+   space at the default sizing, so mobile gets its own tighter scale and positioning. */
+@media (max-width: 600px) {
+  :root {
+    --card-w: clamp(40px, 14vw, 58px);
+  }
+
+  .table {
+    height: clamp(300px, 52vh, 420px);
+  }
+
+  .player-slot {
+    min-width: 0;
+    max-width: 38vw;
+  }
+
+  .player-slot__name {
+    font-size: 0.5rem;
+    padding: 4px 6px;
+  }
+
+  .player-slot__meta {
+    font-size: 0.75rem;
+    gap: 2px;
+  }
+
+  .player-slot--left {
+    left: 4px;
+  }
+
+  .player-slot--right {
+    right: 4px;
+  }
+
+  .trick-pile__count {
+    font-size: 0.6rem;
+  }
+
+  .kozel-tag,
+  .trick-tag {
+    display: block;
+    margin-left: 0;
+    margin-top: 2px;
+  }
+
+  /* The title (with its 🍺/🐐 emoji) was getting squeezed by the header's buttons sharing the
+     same row, wrapping mid-text so the goat emoji fell onto its own line. Giving it the full
+     row (buttons wrap below instead) plus a smaller, viewport-scaled size keeps it on one line. */
+  .screen__header h1 {
+    flex: 1 1 100%;
+    font-size: clamp(0.5rem, 3.4vw, 1rem);
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
+
 
 .modal-overlay {
   position: fixed;

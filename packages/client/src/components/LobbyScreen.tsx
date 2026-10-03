@@ -1,6 +1,7 @@
 import type { Difficulty } from '@kozel/shared';
 import { useEffect, useState } from 'react';
 import { useKozelClient } from '../KozelClientProvider.js';
+import { useRules } from '../RulesContext.js';
 
 const STATUS_LABEL: Record<string, string> = {
   LOBBY: 'Čeká se na hráče',
@@ -15,6 +16,7 @@ const DIFFICULTY_LABEL: Record<Difficulty, string> = {
 
 export function LobbyScreen() {
   const { playerName, rooms, refreshLobby, createRoom, joinRoom } = useKozelClient();
+  const { openRules } = useRules();
   const [roomName, setRoomName] = useState(`${playerName}ova herna`);
   const [difficulty, setDifficulty] = useState<Difficulty>('HARD');
 
@@ -28,7 +30,12 @@ export function LobbyScreen() {
     <div className="screen">
       <header className="screen__header">
         <h1>Kozel</h1>
-        <span className="player-badge">Hraješ jako {playerName}</span>
+        <div className="row">
+          <span className="player-badge">Hraješ jako {playerName}</span>
+          <button type="button" className="secondary-button" onClick={openRules}>
+            📜 Pravidla
+          </button>
+        </div>
       </header>
 
       <div className="panel">

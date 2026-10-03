@@ -1,7 +1,9 @@
 import { useKozelClient } from '../KozelClientProvider.js';
+import { useRules } from '../RulesContext.js';
 
 export function RoomScreen() {
   const { room, seatIndex, startGame, addBot, leaveRoom } = useKozelClient();
+  const { openRules } = useRules();
   if (!room) return null;
 
   const occupiedCount = room.seats.filter((s) => s.occupied).length;
@@ -13,9 +15,14 @@ export function RoomScreen() {
     <div className="screen">
       <header className="screen__header">
         <h1>{room.name}</h1>
-        <button type="button" className="link-button" onClick={() => leaveRoom()}>
-          Opustit místnost
-        </button>
+        <div className="row">
+          <button type="button" className="secondary-button" onClick={openRules}>
+            📜 Pravidla
+          </button>
+          <button type="button" className="link-button" onClick={() => leaveRoom()}>
+            Opustit místnost
+          </button>
+        </div>
       </header>
 
       <div className="panel">

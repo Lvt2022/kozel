@@ -2,6 +2,7 @@ import type { Card, ClientPlayerView } from '@kozel/shared';
 import { PLAYER_COUNT } from '@kozel/shared';
 import { useEffect, useState } from 'react';
 import { useKozelClient } from '../KozelClientProvider.js';
+import { useRules } from '../RulesContext.js';
 import { CardView, RANK_FULL_LABEL, SUIT_LABEL } from './CardView.js';
 
 // Seats are laid out clockwise around the table: each next player (by turn order) sits to the viewer's left.
@@ -19,6 +20,7 @@ function getValidCards(hand: Card[], leadSuit: Card['suit'] | null, heartsBroken
 
 export function GameScreen() {
   const { gameState, playerName, declareKozel, playCard, nextRound, leaveRoom } = useKozelClient();
+  const { openRules } = useRules();
   const [showMyTricks, setShowMyTricks] = useState(false);
   if (!gameState) return null;
 
@@ -44,12 +46,16 @@ export function GameScreen() {
   const validCards = isMyTurn && me.hand ? getValidCards(me.hand, leadSuit, heartsBroken) : [];
   const isCardValid = (card: Card) => validCards.some((c) => c.suit === card.suit && c.rank === card.rank);
   const winningCard = trickComplete ? currentTrick.find((e) => e.playerIndex === trickWinnerIndex)?.card : undefined;
+  const winnerPosition = trickComplete ? SEAT_POSITION[(trickWinnerIndex! - viewerSeatIndex + 4) % 4] : null;
 
   return (
     <div className="screen game-screen">
       <header className="screen__header">
         <h1>Kozel · kolo {gameState.roundNumber}</h1>
         <div className="row">
+          <button type="button" className="secondary-button" onClick={openRules}>
+            📜 Pravidla
+          </button>
           <button type="button" className="link-button" onClick={() => leaveRoom()}>
             Opustit hru
           </button>
@@ -69,6 +75,7 @@ export function GameScreen() {
             {players.map((p, seatIndex) => {
               const offset = (seatIndex - viewerSeatIndex + 4) % 4;
               const position = SEAT_POSITION[offset]!;
+              const justWon = trickComplete && seatIndex === trickWinnerIndex;
               return (
                 <PlayerSlot
                   key={seatIndex}
@@ -78,6 +85,8 @@ export function GameScreen() {
                   isSelf={seatIndex === viewerSeatIndex}
                   isKozelHolder={kozelPlayerIndex === seatIndex}
                   isTrickWinner={trickComplete && trickWinnerIndex === seatIndex}
+                  tricksWon={p.tricksWon + (justWon ? 1 : 0)}
+                  justWonTrick={justWon}
                 />
               );
             })}
@@ -90,6 +99,7 @@ export function GameScreen() {
                     'trick-card',
                     `trick-card--${SEAT_POSITION[(entry.playerIndex - viewerSeatIndex + 4) % 4]}`,
                     trickComplete && entry.playerIndex === trickWinnerIndex ? 'trick-card--winner' : '',
+                    trickComplete && winnerPosition ? `trick-card--collect-${winnerPosition}` : '',
                   ]
                     .filter(Boolean)
                     .join(' ')}
@@ -99,15 +109,13 @@ export function GameScreen() {
               ))}
               {currentTrick.length === 0 && phase === 'PLAYING_TRICK' && <span className="muted">Čeká se na výnos…</span>}
             </div>
-          </div>
 
-          {phase === 'PLAYING_TRICK' && (
-            <div className="trick-winner-banner">
-              {trickComplete && winningCard && (
-                <>🏆 {players[trickWinnerIndex!]!.name} sebral štych na {RANK_FULL_LABEL[winningCard.rank]} {SUIT_LABEL[winningCard.suit]}</>
-              )}
-            </div>
-          )}
+            {trickComplete && winningCard && (
+              <div className="trick-winner-banner">
+                🏆 {players[trickWinnerIndex!]!.name} sebral štych na {RANK_FULL_LABEL[winningCard.rank]} {SUIT_LABEL[winningCard.suit]}
+              </div>
+            )}
+          </div>
 
           {phase === 'DECLARING_KOZEL' && (
             <KozelDeclarationPanel
@@ -120,6 +128,23 @@ export function GameScreen() {
           {phase === 'ROUND_END' && <RoundEndPanel players={players} multiplier={multiplier} onNextRound={() => nextRound()} />}
 
           {phase === 'GAME_OVER' && <GameOverPanel players={players} losers={gameState.losers} onLeave={() => leaveRoom()} />}
+
+          {(phase === 'PLAYING_TRICK' || phase === 'DECLARING_KOZEL') && (
+            <div className="hand">
+              <h2>{playerName} {isMyTurn && <span className="badge">Jsi na tahu</span>}</h2>
+              <div className="hand__cards">
+                {(me.hand ?? []).map((card) => (
+                  <CardView
+                    key={`${card.suit}-${card.rank}`}
+                    card={card}
+                    disabled={!isMyTurn || !isCardValid(card)}
+                    highlight={isMyTurn && isCardValid(card)}
+                    onClick={isMyTurn && isCardValid(card) ? () => playCard(card) : undefined}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           {me.captured && me.captured.length > 0 && (
             <div className="panel">
@@ -138,23 +163,6 @@ export function GameScreen() {
                   ))}
                 </div>
               )}
-            </div>
-          )}
-
-          {(phase === 'PLAYING_TRICK' || phase === 'DECLARING_KOZEL') && (
-            <div className="hand">
-              <h2>{playerName} {isMyTurn && <span className="badge">Jsi na tahu</span>}</h2>
-              <div className="hand__cards">
-                {(me.hand ?? []).map((card) => (
-                  <CardView
-                    key={`${card.suit}-${card.rank}`}
-                    card={card}
-                    disabled={!isMyTurn || !isCardValid(card)}
-                    highlight={isMyTurn && isCardValid(card)}
-                    onClick={isMyTurn && isCardValid(card) ? () => playCard(card) : undefined}
-                  />
-                ))}
-              </div>
             </div>
           )}
         </div>
@@ -176,6 +184,8 @@ function PlayerSlot({
   isSelf,
   isKozelHolder,
   isTrickWinner,
+  tricksWon,
+  justWonTrick,
 }: {
   player: ClientPlayerView;
   position: (typeof SEAT_POSITION)[number];
@@ -183,6 +193,8 @@ function PlayerSlot({
   isSelf: boolean;
   isKozelHolder: boolean;
   isTrickWinner: boolean;
+  tricksWon: number;
+  justWonTrick: boolean;
 }) {
   return (
     <div
@@ -196,23 +208,30 @@ function PlayerSlot({
         .filter(Boolean)
         .join(' ')}
     >
-      <div className="player-slot__name">
-        {player.name}
-        {isSelf && ' (ty)'}
-        {player.isBot && ' 🤖'}
-        {!player.isBot && !player.connected && <span className="muted"> (odpojen, čeká se…)</span>}
-        {isKozelHolder && <span className="kozel-tag">🐐 Kozel</span>}
-        {isTrickWinner && <span className="trick-tag">🏆 Štych</span>}
-      </div>
-      <div className="player-slot__meta">
-        {!isSelf && <span>{player.handCount} karet</span>}
-        {player.tricksWon > 0 && (
-          <span className="trick-pile" title={`Sebrané štychy v tomto kole: ${player.tricksWon}`}>
+      <div className="player-slot__top-row">
+        <div className="player-slot__name">
+          {player.name}
+          {isSelf && ' (ty)'}
+          {player.isBot && ' 🤖'}
+          {!player.isBot && !player.connected && <span className="muted"> (odpojen, čeká se…)</span>}
+          {isKozelHolder && <span className="kozel-tag">🐐 Kozel</span>}
+          {isTrickWinner && <span className="trick-tag">🏆 Štych</span>}
+        </div>
+        {tricksWon > 0 && (
+          <div
+            className={['trick-pile', justWonTrick ? 'trick-pile--just-won' : ''].filter(Boolean).join(' ')}
+            title={`${player.name} — sebrané štychy v tomto kole: ${tricksWon}`}
+          >
             <CardView card={{ suit: 'HEARTS', rank: '7' }} faceDown size="small" />
-            <span className="trick-pile__count">×{player.tricksWon}</span>
-          </span>
+            <span className="trick-pile__count">×{tricksWon}</span>
+          </div>
         )}
       </div>
+      {!isSelf && (
+        <div className="player-slot__meta">
+          <span>{player.handCount} karet</span>
+        </div>
+      )}
     </div>
   );
 }
