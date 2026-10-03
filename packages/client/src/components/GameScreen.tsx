@@ -22,6 +22,22 @@ export function GameScreen() {
   const { gameState, playerName, declareKozel, playCard, nextRound, leaveRoom } = useKozelClient();
   const { openRules } = useRules();
   const [showMyTricks, setShowMyTricks] = useState(false);
+  // The 4th card and trickComplete arrive in the very same state update, so a card freshly
+  // mounted this render would get the "collect toward the winner" class immediately — a brand
+  // new DOM node has no previous style to transition FROM, so it would just appear already
+  // faded out instead of visibly sitting on the table first. Flipping this on a tick later, once
+  // the card has had a render at its normal played position, gives the CSS transition something
+  // to animate from.
+  const [collecting, setCollecting] = useState(false);
+  const trickCompleteNow = (gameState?.currentTrick.length ?? 0) >= PLAYER_COUNT && gameState?.trickWinnerIndex !== null;
+  useEffect(() => {
+    if (!trickCompleteNow) {
+      setCollecting(false);
+      return;
+    }
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setCollecting(true)));
+    return () => cancelAnimationFrame(id);
+  }, [trickCompleteNow]);
   if (!gameState) return null;
 
   const {
@@ -99,7 +115,7 @@ export function GameScreen() {
                     'trick-card',
                     `trick-card--${SEAT_POSITION[(entry.playerIndex - viewerSeatIndex + 4) % 4]}`,
                     trickComplete && entry.playerIndex === trickWinnerIndex ? 'trick-card--winner' : '',
-                    trickComplete && winnerPosition ? `trick-card--collect-${winnerPosition}` : '',
+                    collecting && winnerPosition ? `trick-card--collect-${winnerPosition}` : '',
                   ]
                     .filter(Boolean)
                     .join(' ')}
