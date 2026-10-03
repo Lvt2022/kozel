@@ -13,7 +13,7 @@ const BOT_MOVE_DELAY_MS = 700;
 const BOT_KOZEL_DECISION_DELAY_MS = 1200;
 const RECONNECT_GRACE_MS = 60_000;
 /** How long a completed trick stays on the table, winner highlighted, before the next one starts. */
-const TRICK_RESOLVE_DELAY_MS = 2200;
+const TRICK_RESOLVE_DELAY_MS = 2800;
 
 interface SocketData {
   playerId?: string;

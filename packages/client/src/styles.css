@@ -459,10 +459,14 @@ button:disabled {
 
 .trick-card {
   position: absolute;
+  /* Must render above the player-slot trick piles (z-index 5) — piles sit close to the table
+     center now that they're attached to each seat's name tag, and without this a played card
+     could end up hidden behind the player's own (already higher-z-index) pile. */
+  z-index: 6;
   /* The highlight (scale 1.1 on .trick-card--winner .card) shows first; only once the player has
      had a moment to see who won does the whole trick collect itself toward that player's pile. */
   transition: transform 0.9s ease-in, opacity 0.9s ease-in;
-  transition-delay: 0.7s;
+  transition-delay: 1s;
 }
 
 .trick-card--bottom {
@@ -481,12 +485,17 @@ button:disabled {
   transform: translateX(calc(var(--card-w) * 1.452));
 }
 
+.trick-card--winner {
+  /* .trick-card's own z-index makes it a stacking context, so a child's z-index can't lift it
+     above sibling .trick-card elements — the wrapper itself needs the higher value. */
+  z-index: 7;
+}
+
 .trick-card--winner .card {
   outline: 3px solid var(--brass-bright);
   outline-offset: 2px;
   box-shadow: 0 0 16px 4px rgba(255, 206, 84, 0.85);
   transform: scale(1.1);
-  z-index: 2;
 }
 
 /* Once a trick is won, all 4 cards fly toward the winner's pile corner together, regardless of
@@ -514,18 +523,22 @@ button:disabled {
 .trick-winner-banner {
   /* Thrown across the middle of the table itself for the brief reveal window, instead of
      reserving a permanent row below it — it only exists in the DOM while trickComplete is true,
-     so there's no empty state to worry about. */
+     so there's no empty state to worry about. Spans almost the full table width (rather than a
+     narrow max-width) and scales its font down on narrow tables so the message reads as one
+     line instead of wrapping awkwardly. */
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 8;
-  max-width: 80%;
+  width: calc(100% - 24px);
+  box-sizing: border-box;
   text-align: center;
   background: var(--parchment);
   color: var(--ink);
   font-family: var(--font-pixel);
-  font-size: 0.6rem;
+  font-size: clamp(0.42rem, 2.3vw, 0.6rem);
+  line-height: 1.6;
   padding: 10px 16px;
   border: 2px solid var(--ink);
   box-shadow: 4px 4px 0 rgba(0, 0, 0, 0.5), 0 0 20px 6px rgba(255, 206, 84, 0.35);
