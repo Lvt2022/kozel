@@ -10,8 +10,14 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
   function save() {
     const trimmed = name.trim();
     if (trimmed) setPlayerName(trimmed);
-    setAvatarId(selectedAvatar);
     onClose();
+  }
+
+  function pickAvatar(id: AvatarId) {
+    setSelectedAvatar(id);
+    // Applied immediately (not just on "Uložit") so a pick still sticks even if the dialog gets
+    // closed via the backdrop, the ✕, or "Zrušit" instead of the save button.
+    setAvatarId(id);
   }
 
   return (
@@ -39,7 +45,7 @@ export function ProfileModal({ onClose }: { onClose: () => void }) {
               ]
                 .filter(Boolean)
                 .join(' ')}
-              onClick={() => setSelectedAvatar(id)}
+              onClick={() => pickAvatar(id)}
               aria-label={`Avatar ${id}`}
               aria-pressed={selectedAvatar === id}
             >
