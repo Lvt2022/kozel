@@ -1,8 +1,9 @@
-import type { AckResult, Card, ClientGameState, Difficulty, RoomPublicView, RoomSummary } from '@kozel/shared';
+import type { AckResult, AvatarId, Card, ClientGameState, Difficulty, RoomPublicView, RoomSummary } from '@kozel/shared';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { socket } from './socket.js';
 
 const PLAYER_NAME_KEY = 'kozel:playerName';
+const PLAYER_AVATAR_KEY = 'kozel:playerAvatar';
 const PLAYER_ID_KEY = 'kozel:playerId';
 const ROOM_ID_KEY = 'kozel:roomId';
 
@@ -27,6 +28,8 @@ interface KozelClientValue {
   connected: boolean;
   playerName: string;
   setPlayerName: (name: string) => void;
+  avatarId: AvatarId | null;
+  setAvatarId: (avatarId: AvatarId | null) => void;
   rooms: RoomSummary[];
   room: RoomPublicView | null;
   seatIndex: number | null;
@@ -49,6 +52,9 @@ const KozelClientContext = createContext<KozelClientValue | null>(null);
 export function KozelClientProvider({ children }: { children: React.ReactNode }) {
   const [connected, setConnected] = useState(socket.connected);
   const [playerName, setPlayerNameState] = useState(() => localStorage.getItem(PLAYER_NAME_KEY) ?? '');
+  const [avatarId, setAvatarIdState] = useState<AvatarId | null>(
+    () => (localStorage.getItem(PLAYER_AVATAR_KEY) as AvatarId | null) ?? null
+  );
   const [rooms, setRooms] = useState<RoomSummary[]>([]);
   const [room, setRoom] = useState<RoomPublicView | null>(null);
   const [seatIndex, setSeatIndex] = useState<number | null>(null);
@@ -60,6 +66,12 @@ export function KozelClientProvider({ children }: { children: React.ReactNode })
   const setPlayerName = useCallback((name: string) => {
     localStorage.setItem(PLAYER_NAME_KEY, name);
     setPlayerNameState(name);
+  }, []);
+
+  const setAvatarId = useCallback((id: AvatarId | null) => {
+    if (id) localStorage.setItem(PLAYER_AVATAR_KEY, id);
+    else localStorage.removeItem(PLAYER_AVATAR_KEY);
+    setAvatarIdState(id);
   }, []);
 
   const refreshLobby = useCallback(() => {
@@ -76,11 +88,13 @@ export function KozelClientProvider({ children }: { children: React.ReactNode })
       // reclaiming the same seat (even mid-game) since the server recognizes the stored playerId.
       const savedRoomId = sessionStorage.getItem(ROOM_ID_KEY);
       const savedPlayerName = localStorage.getItem(PLAYER_NAME_KEY);
+      const savedAvatarId = localStorage.getItem(PLAYER_AVATAR_KEY) as AvatarId | null;
       if (savedRoomId && savedPlayerName) {
         emitAck<{ roomId: string; seatIndex: number }>('room:join', {
           playerName: savedPlayerName,
           roomId: savedRoomId,
           playerId: playerIdRef.current,
+          avatarId: savedAvatarId,
         }).then((ack) => {
           if (ack.ok) {
             roomIdRef.current = ack.roomId;
@@ -141,6 +155,7 @@ export function KozelClientProvider({ children }: { children: React.ReactNode })
           roomName,
           playerId: playerIdRef.current,
           difficulty,
+          avatarId,
         });
         if (ack.ok) {
           roomIdRef.current = ack.roomId;
@@ -148,7 +163,7 @@ export function KozelClientProvider({ children }: { children: React.ReactNode })
         }
         return ack;
       }),
-    [playerName, withErrorHandling]
+    [playerName, avatarId, withErrorHandling]
   );
 
   const joinRoom = useCallback(
@@ -158,6 +173,7 @@ export function KozelClientProvider({ children }: { children: React.ReactNode })
           playerName,
           roomId,
           playerId: playerIdRef.current,
+          avatarId,
         });
         if (ack.ok) {
           roomIdRef.current = ack.roomId;
@@ -165,7 +181,7 @@ export function KozelClientProvider({ children }: { children: React.ReactNode })
         }
         return ack;
       }),
-    [playerName, withErrorHandling]
+    [playerName, avatarId, withErrorHandling]
   );
 
   const leaveRoom = useCallback(
@@ -198,6 +214,8 @@ export function KozelClientProvider({ children }: { children: React.ReactNode })
     connected,
     playerName,
     setPlayerName,
+    avatarId,
+    setAvatarId,
     rooms,
     room,
     seatIndex,

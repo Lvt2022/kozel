@@ -26,6 +26,7 @@ export function sanitizeStateForViewer(
       seatIndex,
       name: p.name,
       isBot: p.isBot,
+      avatarId: p.avatarId,
       connected: seats[seatIndex]?.connected ?? true,
       hand: seatIndex === viewerSeatIndex ? p.hand : null,
       handCount: p.hand.length,

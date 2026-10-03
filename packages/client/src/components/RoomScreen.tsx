@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useKozelClient } from '../KozelClientProvider.js';
 import { useRules } from '../RulesContext.js';
+import { Avatar } from './Avatar.js';
 import { ConfirmModal } from './ConfirmModal.js';
 
 export function RoomScreen() {
@@ -44,7 +45,8 @@ export function RoomScreen() {
             <li key={seat.seatIndex} className={`seat ${seat.occupied ? 'seat--occupied' : 'seat--empty'}`}>
               <span className="seat__index">{seat.seatIndex + 1}.</span>
               {seat.occupied ? (
-                <span>
+                <span className="seat__player">
+                  <Avatar avatarId={seat.avatarId} size="small" />
                   {seat.name}
                   {seat.isBot && ' 🤖'}
                   {seat.seatIndex === seatIndex && ' (ty)'}

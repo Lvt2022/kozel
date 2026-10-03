@@ -6,7 +6,7 @@ import {
   resolveTrick as engineResolveTrick,
   startNewRound,
 } from '@kozel/shared';
-import type { Difficulty, RoomData, RoomPublicView, RoomStatus, RoomSummary, SeatPlayer } from './types.js';
+import type { AvatarId, Difficulty, RoomData, RoomPublicView, RoomStatus, RoomSummary, SeatPlayer } from './types.js';
 
 const MAX_PLAYERS = 4;
 
@@ -39,6 +39,7 @@ export function toRoomPublicView(room: RoomData): RoomPublicView {
       name: seat?.name ?? null,
       isBot: seat?.isBot ?? false,
       occupied: seat !== null,
+      avatarId: seat?.avatarId ?? null,
     })),
   };
 }
@@ -58,18 +59,28 @@ export class RoomManager {
 
   createRoom(
     name: string,
-    creator: { playerId: string; socketId: string; name: string },
+    creator: { playerId: string; socketId: string; name: string; avatarId?: AvatarId | null },
     difficulty: Difficulty = 'HARD'
   ): RoomData {
     const id = crypto.randomUUID();
     const seats: Array<SeatPlayer | null> = [null, null, null, null];
-    seats[0] = { playerId: creator.playerId, socketId: creator.socketId, name: creator.name, isBot: false, connected: true };
+    seats[0] = {
+      playerId: creator.playerId,
+      socketId: creator.socketId,
+      name: creator.name,
+      isBot: false,
+      avatarId: creator.avatarId ?? null,
+      connected: true,
+    };
     const room: RoomData = { id, name, seats, state: null, createdAt: Date.now(), difficulty };
     this.rooms.set(id, room);
     return room;
   }
 
-  joinRoom(roomId: string, player: { playerId: string; socketId: string; name: string }): { room: RoomData; seatIndex: number } {
+  joinRoom(
+    roomId: string,
+    player: { playerId: string; socketId: string; name: string; avatarId?: AvatarId | null }
+  ): { room: RoomData; seatIndex: number } {
     const room = this.requireRoom(roomId);
 
     // A player already seated here (even if the game is in progress) is reconnecting, not joining fresh.
@@ -93,6 +104,7 @@ export class RoomManager {
       socketId: player.socketId,
       name: player.name,
       isBot: false,
+      avatarId: player.avatarId ?? null,
       connected: true,
     };
     return { room, seatIndex: freeSeatIndex };
@@ -114,6 +126,7 @@ export class RoomManager {
       socketId: '',
       name: `Bot ${botNumber}`,
       isBot: true,
+      avatarId: null,
       connected: true,
     };
     return room;
@@ -192,7 +205,7 @@ export class RoomManager {
       throw new RoomManagerError('Pro zahájení hry je potřeba 4 hráčů');
     }
 
-    const players = room.seats.map((s) => ({ id: s!.playerId, name: s!.name, isBot: s!.isBot }));
+    const players = room.seats.map((s) => ({ id: s!.playerId, name: s!.name, isBot: s!.isBot, avatarId: s!.avatarId }));
     const dealerIndex = Math.floor(Math.random() * MAX_PLAYERS);
     const initial = createInitialGameState(players, dealerIndex);
     room.state = startNewRound(initial);

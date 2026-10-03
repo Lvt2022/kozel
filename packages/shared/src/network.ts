@@ -3,6 +3,14 @@ import type { GamePhase, RoundHistoryEntry, TrickEntry } from './gameEngine.js';
 
 export type RoomStatus = 'LOBBY' | 'IN_PROGRESS' | 'FINISHED';
 
+/** Filenames (without extension) of the avatar images under client/public/avatars/. */
+export const AVATAR_IDS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'] as const;
+export type AvatarId = (typeof AVATAR_IDS)[number];
+
+export function isAvatarId(value: unknown): value is AvatarId {
+  return typeof value === 'string' && (AVATAR_IDS as readonly string[]).includes(value);
+}
+
 /**
  * EASY reveals each player's live running round score (captured penalty points so far);
  * HARD hides it until the round ends, so players must track their own score mentally.
@@ -23,6 +31,7 @@ export interface SeatPublicView {
   name: string | null;
   isBot: boolean;
   occupied: boolean;
+  avatarId: AvatarId | null;
 }
 
 export interface RoomPublicView {
@@ -37,6 +46,7 @@ export interface ClientPlayerView {
   seatIndex: number;
   name: string;
   isBot: boolean;
+  avatarId: AvatarId | null;
   connected: boolean;
   hand: Card[] | null;
   handCount: number;

@@ -3,6 +3,7 @@ import { PLAYER_COUNT } from '@kozel/shared';
 import { useEffect, useState } from 'react';
 import { useKozelClient } from '../KozelClientProvider.js';
 import { useRules } from '../RulesContext.js';
+import { Avatar } from './Avatar.js';
 import { CardView, RANK_FULL_LABEL, SUIT_LABEL } from './CardView.js';
 import { ConfirmModal } from './ConfirmModal.js';
 
@@ -238,6 +239,7 @@ function PlayerSlot({
     >
       <div className="player-slot__top-row">
         <div className="player-slot__name">
+          <Avatar avatarId={player.avatarId} size="small" />
           {player.name}
           {isSelf && ' (ty)'}
           {player.isBot && ' 🤖'}

@@ -244,6 +244,21 @@ button:disabled {
   padding: 6px 10px;
 }
 
+/* The badge doubles as the "open profile" button, so it needs a flex row for the avatar + text
+   and a lighter shadow/hover than a regular button (it reads as a chip, not an action button). */
+.player-badge--button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: none;
+}
+
+.player-badge--button:hover:not(:disabled) {
+  background: var(--brass-bright);
+  box-shadow: none;
+  transform: none;
+}
+
 .room-list {
   list-style: none;
   padding: 0;
@@ -280,6 +295,12 @@ button:disabled {
   font-family: var(--font-pixel);
   font-size: 0.8rem;
   color: var(--wood);
+}
+
+.seat__player {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .seat--empty {
@@ -989,4 +1010,65 @@ button:disabled {
   right: 10px;
   padding: 6px 10px;
   font-size: 0.8rem;
+}
+
+/* Player avatar, shown wherever a name is (table seats, room list, the profile badge). */
+.avatar-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  border: 2px solid var(--ink);
+  object-fit: cover;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.avatar-img--small {
+  width: 22px;
+  height: 22px;
+  border-width: 1px;
+}
+
+.profile-modal__label {
+  display: block;
+  font-family: var(--font-pixel);
+  font-size: 0.6rem;
+  color: var(--wood);
+  margin: 16px 0 6px;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.avatar-grid__item {
+  padding: 4px;
+  background: var(--parchment-dark);
+  border: 2px solid var(--wood-light);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.avatar-grid__item img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 2px;
+}
+
+.avatar-grid__item:hover:not(:disabled) {
+  background: var(--parchment-dark);
+  border-color: var(--brass);
+}
+
+.avatar-grid__item--selected {
+  border-color: var(--brass-bright);
+  box-shadow: 0 0 0 3px rgba(255, 206, 84, 0.6);
+}
+
+.profile-modal__actions {
+  justify-content: center;
+  margin-top: 18px;
 }

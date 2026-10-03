@@ -87,7 +87,10 @@ describe('Kozel socket server (integration)', () => {
     const turnSeat = playingStates[0]!.turnIndex;
     const turnSocket = [a, b, c, d][turnSeat]!;
     const turnState = playingStates[turnSeat]!;
-    const cardToPlay = turnState.players[turnSeat]!.hand![0]!;
+    const hand = turnState.players[turnSeat]!.hand!;
+    // Leading with HEARTS before any have been broken is rejected (see the gameEngine hearts
+    // rule), so pick a non-HEARTS card to lead with, falling back to hand[0] on an all-hearts hand.
+    const cardToPlay = hand.find((c) => c.suit !== 'HEARTS') ?? hand[0]!;
 
     const afterPlayPromises = [a, b, c, d].map((s) =>
       waitForState(s!, (st) => st.currentTrick.length === 1 || st.turnIndex !== turnSeat)

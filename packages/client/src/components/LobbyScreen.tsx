@@ -2,6 +2,8 @@ import type { Difficulty } from '@kozel/shared';
 import { useEffect, useState } from 'react';
 import { useKozelClient } from '../KozelClientProvider.js';
 import { useRules } from '../RulesContext.js';
+import { Avatar } from './Avatar.js';
+import { ProfileModal } from './ProfileModal.js';
 
 const STATUS_LABEL: Record<string, string> = {
   LOBBY: 'Čeká se na hráče',
@@ -15,10 +17,11 @@ const DIFFICULTY_LABEL: Record<Difficulty, string> = {
 };
 
 export function LobbyScreen() {
-  const { playerName, rooms, refreshLobby, createRoom, joinRoom } = useKozelClient();
+  const { playerName, avatarId, rooms, refreshLobby, createRoom, joinRoom } = useKozelClient();
   const { openRules } = useRules();
   const [roomName, setRoomName] = useState(`${playerName}ova herna`);
   const [difficulty, setDifficulty] = useState<Difficulty>('HARD');
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     refreshLobby();
@@ -31,12 +34,17 @@ export function LobbyScreen() {
       <header className="screen__header">
         <h1>Kozel</h1>
         <div className="row">
-          <span className="player-badge">Hraješ jako {playerName}</span>
+          <button type="button" className="player-badge player-badge--button" onClick={() => setShowProfile(true)}>
+            <Avatar avatarId={avatarId} size="small" />
+            Hraješ jako {playerName}
+          </button>
           <button type="button" className="secondary-button" onClick={openRules}>
-            📜 Pravidla
+            📜 <span className="btn-label">Pravidla</span>
           </button>
         </div>
       </header>
+
+      {showProfile && <ProfileModal onClose={() => setShowProfile(false)} />}
 
       <div className="panel">
         <h2>Nová místnost</h2>

@@ -1,12 +1,13 @@
-import type { Difficulty, GameState } from '@kozel/shared';
+import type { AvatarId, Difficulty, GameState } from '@kozel/shared';
 
-export type { ClientGameState, ClientPlayerView, Difficulty, RoomPublicView, RoomStatus, RoomSummary, SeatPublicView } from '@kozel/shared';
+export type { AvatarId, ClientGameState, ClientPlayerView, Difficulty, RoomPublicView, RoomStatus, RoomSummary, SeatPublicView } from '@kozel/shared';
 
 export interface SeatPlayer {
   playerId: string;
   socketId: string;
   name: string;
   isBot: boolean;
+  avatarId: AvatarId | null;
   connected: boolean;
 }
 

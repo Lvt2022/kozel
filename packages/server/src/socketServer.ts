@@ -1,4 +1,4 @@
-import { getValidCards, KOZEL_DECLARATION_TIMEOUT_MS, PLAYER_COUNT, type AckResult, type Card } from '@kozel/shared';
+import { getValidCards, isAvatarId, KOZEL_DECLARATION_TIMEOUT_MS, PLAYER_COUNT, type AckResult, type AvatarId, type Card } from '@kozel/shared';
 import type { Server as HttpServer } from 'node:http';
 import { Server, type Socket } from 'socket.io';
 import { chooseBotCard, chooseBotKozelDeclaration } from './bot.js';
@@ -182,12 +182,23 @@ export function createSocketServer(httpServer: HttpServer): Server {
           roomName,
           playerId: clientPlayerId,
           difficulty,
-        }: { playerName: string; roomName: string; playerId?: string; difficulty?: 'EASY' | 'HARD' },
+          avatarId,
+        }: {
+          playerName: string;
+          roomName: string;
+          playerId?: string;
+          difficulty?: 'EASY' | 'HARD';
+          avatarId?: AvatarId | null;
+        },
         cb: Ack<{ roomId: string; seatIndex: number }>
       ) => {
         try {
           const playerId = clientPlayerId || socket.id;
-          const room = roomManager.createRoom(roomName, { playerId, socketId: socket.id, name: playerName }, difficulty);
+          const room = roomManager.createRoom(
+            roomName,
+            { playerId, socketId: socket.id, name: playerName, avatarId: isAvatarId(avatarId) ? avatarId : null },
+            difficulty
+          );
           Object.assign(socketData(socket), { playerId, roomId: room.id });
           socket.join(room.id);
           broadcastRoom(room);
@@ -200,10 +211,23 @@ export function createSocketServer(httpServer: HttpServer): Server {
 
     socket.on(
       'room:join',
-      ({ playerName, roomId, playerId: clientPlayerId }: { playerName: string; roomId: string; playerId?: string }, cb: Ack<{ roomId: string; seatIndex: number }>) => {
+      (
+        {
+          playerName,
+          roomId,
+          playerId: clientPlayerId,
+          avatarId,
+        }: { playerName: string; roomId: string; playerId?: string; avatarId?: AvatarId | null },
+        cb: Ack<{ roomId: string; seatIndex: number }>
+      ) => {
         try {
           const playerId = clientPlayerId || socket.id;
-          const { room, seatIndex } = roomManager.joinRoom(roomId, { playerId, socketId: socket.id, name: playerName });
+          const { room, seatIndex } = roomManager.joinRoom(roomId, {
+            playerId,
+            socketId: socket.id,
+            name: playerName,
+            avatarId: isAvatarId(avatarId) ? avatarId : null,
+          });
           clearDisconnectTimer(room.id, playerId);
           Object.assign(socketData(socket), { playerId, roomId: room.id });
           socket.join(room.id);

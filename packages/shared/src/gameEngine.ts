@@ -1,4 +1,5 @@
 import { Card, Suit, cardPoints, cardsEqual, createDeck, isHigherRank, isKozel } from './cards.js';
+import type { AvatarId } from './network.js';
 import { Rng, shuffle } from './rng.js';
 
 export const PLAYER_COUNT = 4;
@@ -17,6 +18,7 @@ export interface PlayerState {
   id: string;
   name: string;
   isBot: boolean;
+  avatarId: AvatarId | null;
   hand: Card[];
   /** Tricks this player has collected so far this round, each an array of the 4 played cards. */
   captured: Card[][];
@@ -70,7 +72,7 @@ export function nextPlayerIndex(index: number): number {
 }
 
 export function createInitialGameState(
-  players: Array<{ id: string; name: string; isBot: boolean }>,
+  players: Array<{ id: string; name: string; isBot: boolean; avatarId?: AvatarId | null }>,
   dealerIndex: number
 ): GameState {
   if (players.length !== PLAYER_COUNT) {
@@ -82,6 +84,7 @@ export function createInitialGameState(
       id: p.id,
       name: p.name,
       isBot: p.isBot,
+      avatarId: p.avatarId ?? null,
       hand: [],
       captured: [],
       roundScore: 0,
