@@ -287,6 +287,15 @@ describe('full round scoring and dealer rotation', () => {
     expect(final.players[0]!.totalScore).toBe(40);
   });
 
+  it('appends a roundHistory entry with every player\'s score once the round ends', () => {
+    const final = playFullRound(suitSweepState(true));
+    expect(final.roundHistory).toHaveLength(1);
+    const entry = final.roundHistory[0]!;
+    expect(entry.roundNumber).toBe(final.roundNumber);
+    expect(entry.multiplier).toBe(2);
+    expect(entry.scores).toEqual([40, 0, 0, 0]);
+  });
+
   it('ends the game once a player reaches 100 points and identifies the loser', () => {
     let state = suitSweepState(false);
     state = { ...state, players: state.players.map((p, i) => (i === 0 ? { ...p, totalScore: 85 } : p)) };

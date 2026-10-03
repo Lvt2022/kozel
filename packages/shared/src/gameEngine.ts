@@ -29,6 +29,13 @@ export interface TrickEntry {
   card: Card;
 }
 
+/** One completed round's final score per player, indexed the same as GameState.players. */
+export interface RoundHistoryEntry {
+  roundNumber: number;
+  multiplier: 1 | 2;
+  scores: number[];
+}
+
 export interface GameState {
   phase: GamePhase;
   players: PlayerState[];
@@ -54,6 +61,8 @@ export interface GameState {
   losers: number[];
   /** True once a HEARTS card has been played in this round, allowing it to be led going forward. */
   heartsBroken: boolean;
+  /** Final score of every completed round so far this game, oldest first. */
+  roundHistory: RoundHistoryEntry[];
 }
 
 export function nextPlayerIndex(index: number): number {
@@ -93,6 +102,7 @@ export function createInitialGameState(
     gameOver: false,
     losers: [],
     heartsBroken: false,
+    roundHistory: [],
   };
 }
 
@@ -287,6 +297,11 @@ export function resolveTrick(state: GameState): GameState {
     ? finalPlayers.reduce<number[]>((acc, p, i) => (p.totalScore === maxTotalScore ? [...acc, i] : acc), [])
     : [];
 
+  const roundHistory = [
+    ...state.roundHistory,
+    { roundNumber: state.roundNumber, multiplier: state.multiplier, scores: roundScores },
+  ];
+
   return {
     ...state,
     players: finalPlayers,
@@ -299,6 +314,7 @@ export function resolveTrick(state: GameState): GameState {
     phase: gameOver ? 'GAME_OVER' : 'ROUND_END',
     gameOver,
     losers,
+    roundHistory,
   };
 }
 

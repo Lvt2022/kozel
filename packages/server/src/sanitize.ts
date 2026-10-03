@@ -56,5 +56,6 @@ export function sanitizeStateForViewer(
     gameOver: state.gameOver,
     losers: state.losers,
     players,
+    roundHistory: state.roundHistory,
   };
 }

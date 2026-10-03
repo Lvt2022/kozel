@@ -1,5 +1,5 @@
 import type { Card, Suit } from './cards.js';
-import type { GamePhase, TrickEntry } from './gameEngine.js';
+import type { GamePhase, RoundHistoryEntry, TrickEntry } from './gameEngine.js';
 
 export type RoomStatus = 'LOBBY' | 'IN_PROGRESS' | 'FINISHED';
 
@@ -69,6 +69,8 @@ export interface ClientGameState {
   gameOver: boolean;
   losers: number[];
   players: ClientPlayerView[];
+  /** Final score of every completed round so far this game, oldest first. */
+  roundHistory: RoundHistoryEntry[];
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types

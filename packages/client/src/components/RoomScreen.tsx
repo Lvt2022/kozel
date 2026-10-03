@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useKozelClient } from '../KozelClientProvider.js';
 import { useRules } from '../RulesContext.js';
+import { ConfirmModal } from './ConfirmModal.js';
 
 export function RoomScreen() {
   const { room, seatIndex, startGame, addBot, leaveRoom } = useKozelClient();
   const { openRules } = useRules();
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   if (!room) return null;
 
   const occupiedCount = room.seats.filter((s) => s.occupied).length;
@@ -17,13 +20,22 @@ export function RoomScreen() {
         <h1>{room.name}</h1>
         <div className="row">
           <button type="button" className="secondary-button" onClick={openRules}>
-            📜 Pravidla
+            📜 <span className="btn-label">Pravidla</span>
           </button>
-          <button type="button" className="link-button" onClick={() => leaveRoom()}>
-            Opustit místnost
+          <button type="button" className="link-button" onClick={() => setShowLeaveConfirm(true)}>
+            🚪 <span className="btn-label">Opustit místnost</span>
           </button>
         </div>
       </header>
+
+      {showLeaveConfirm && (
+        <ConfirmModal
+          title="Opustit místnost?"
+          message="Opravdu chceš opustit místnost?"
+          onConfirm={() => leaveRoom()}
+          onCancel={() => setShowLeaveConfirm(false)}
+        />
+      )}
 
       <div className="panel">
         <h2>Hráči u stolu ({occupiedCount}/4)</h2>

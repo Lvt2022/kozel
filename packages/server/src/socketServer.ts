@@ -14,6 +14,8 @@ const BOT_KOZEL_DECISION_DELAY_MS = 1200;
 const RECONNECT_GRACE_MS = 60_000;
 /** How long a completed trick stays on the table, winner highlighted, before the next one starts. */
 const TRICK_RESOLVE_DELAY_MS = 2800;
+/** How long the round-end score table stays up before the next round deals itself automatically. */
+const ROUND_END_AUTO_ADVANCE_DELAY_MS = 4500;
 
 interface SocketData {
   playerId?: string;
@@ -68,6 +70,26 @@ export function createSocketServer(httpServer: HttpServer): Server {
     scheduleKozelResolution(room);
     scheduleTrickResolution(room);
     scheduleBotCardPlay(room);
+    scheduleRoundAdvance(room);
+  }
+
+  /** Auto-deals the next round after ROUND_END_AUTO_ADVANCE_DELAY_MS, so nobody has to click a button. */
+  function scheduleRoundAdvance(room: RoomData): void {
+    if (!room.state || room.state.phase !== 'ROUND_END') return;
+    const { roundNumber } = room.state;
+
+    const timer = setTimeout(() => {
+      const current = roomManager.getRoom(room.id);
+      if (!current?.state || current.state.phase !== 'ROUND_END') return;
+      if (current.state.roundNumber !== roundNumber) return; // already advanced somehow
+      try {
+        const updated = roomManager.startNextRound(room.id);
+        broadcastRoom(updated);
+      } catch {
+        // Already advanced (e.g. room emptied); nothing to do.
+      }
+    }, ROUND_END_AUTO_ADVANCE_DELAY_MS);
+    timer.unref?.();
   }
 
   /** Auto-resolves the Kozel declaration once its deadline passes (or sooner, for a bot holder). */

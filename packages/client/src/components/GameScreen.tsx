@@ -1,9 +1,10 @@
-import type { Card, ClientPlayerView } from '@kozel/shared';
+import type { Card, ClientPlayerView, RoundHistoryEntry } from '@kozel/shared';
 import { PLAYER_COUNT } from '@kozel/shared';
 import { useEffect, useState } from 'react';
 import { useKozelClient } from '../KozelClientProvider.js';
 import { useRules } from '../RulesContext.js';
 import { CardView, RANK_FULL_LABEL, SUIT_LABEL } from './CardView.js';
+import { ConfirmModal } from './ConfirmModal.js';
 
 // Seats are laid out clockwise around the table: each next player (by turn order) sits to the viewer's left.
 const SEAT_POSITION = ['bottom', 'left', 'top', 'right'] as const;
@@ -19,9 +20,10 @@ function getValidCards(hand: Card[], leadSuit: Card['suit'] | null, heartsBroken
 }
 
 export function GameScreen() {
-  const { gameState, playerName, declareKozel, playCard, nextRound, leaveRoom } = useKozelClient();
+  const { gameState, playerName, declareKozel, playCard, leaveRoom } = useKozelClient();
   const { openRules } = useRules();
   const [showMyTricks, setShowMyTricks] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   // The 4th card and trickComplete arrive in the very same state update, so a card freshly
   // mounted this render would get the "collect toward the winner" class immediately — a brand
   // new DOM node has no previous style to transition FROM, so it would just appear already
@@ -42,6 +44,7 @@ export function GameScreen() {
 
   const {
     phase,
+    difficulty,
     viewerSeatIndex,
     players,
     turnIndex,
@@ -53,6 +56,7 @@ export function GameScreen() {
     kozelDeclarationDeadline,
     multiplier,
     trickWinnerIndex,
+    roundHistory,
   } = gameState;
   const me = players[viewerSeatIndex]!;
   // Once the 4th card is in, the trick is held on the table (winner highlighted) until the
@@ -70,13 +74,22 @@ export function GameScreen() {
         <h1>Kozel · kolo {gameState.roundNumber}</h1>
         <div className="row">
           <button type="button" className="secondary-button" onClick={openRules}>
-            📜 Pravidla
+            📜 <span className="btn-label">Pravidla</span>
           </button>
-          <button type="button" className="link-button" onClick={() => leaveRoom()}>
-            Opustit hru
+          <button type="button" className="link-button" onClick={() => setShowLeaveConfirm(true)}>
+            🚪 <span className="btn-label">Opustit hru</span>
           </button>
         </div>
       </header>
+
+      {showLeaveConfirm && (
+        <ConfirmModal
+          title="Opustit hru?"
+          message="Opravdu chceš opustit rozehranou hru? Ostatní hráči budou pokračovat beze tebe."
+          onConfirm={() => leaveRoom()}
+          onCancel={() => setShowLeaveConfirm(false)}
+        />
+      )}
 
       {isKozelDeclared && (
         <div className="kozel-banner">
@@ -85,110 +98,109 @@ export function GameScreen() {
         </div>
       )}
 
-      <div className="game-layout">
-        <div className="game-main">
-          <div className="table">
-            {players.map((p, seatIndex) => {
-              const offset = (seatIndex - viewerSeatIndex + 4) % 4;
-              const position = SEAT_POSITION[offset]!;
-              const justWon = trickComplete && seatIndex === trickWinnerIndex;
-              return (
-                <PlayerSlot
-                  key={seatIndex}
-                  player={p}
-                  position={position}
-                  isTurn={phase === 'PLAYING_TRICK' && turnIndex === seatIndex && !trickComplete}
-                  isSelf={seatIndex === viewerSeatIndex}
-                  isKozelHolder={kozelPlayerIndex === seatIndex}
-                  isTrickWinner={trickComplete && trickWinnerIndex === seatIndex}
-                  tricksWon={p.tricksWon + (justWon ? 1 : 0)}
-                  justWonTrick={justWon}
-                />
-              );
-            })}
-
-            <div className="trick-area">
-              {currentTrick.map((entry) => (
-                <div
-                  key={entry.playerIndex}
-                  className={[
-                    'trick-card',
-                    `trick-card--${SEAT_POSITION[(entry.playerIndex - viewerSeatIndex + 4) % 4]}`,
-                    trickComplete && entry.playerIndex === trickWinnerIndex ? 'trick-card--winner' : '',
-                    collecting && winnerPosition ? `trick-card--collect-${winnerPosition}` : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                >
-                  <CardView card={entry.card} />
-                </div>
-              ))}
-              {currentTrick.length === 0 && phase === 'PLAYING_TRICK' && <span className="muted">Čeká se na výnos…</span>}
-            </div>
-
-            {trickComplete && winningCard && (
-              <div className="trick-winner-banner">
-                🏆 {players[trickWinnerIndex!]!.name} sebral štych na {RANK_FULL_LABEL[winningCard.rank]} {SUIT_LABEL[winningCard.suit]}
-              </div>
-            )}
-          </div>
-
-          {phase === 'DECLARING_KOZEL' && (
-            <KozelDeclarationPanel
-              isHolder={kozelPlayerIndex === viewerSeatIndex}
-              deadline={kozelDeclarationDeadline}
-              onDeclare={declareKozel}
+      <div className="table">
+        {players.map((p, seatIndex) => {
+          const offset = (seatIndex - viewerSeatIndex + 4) % 4;
+          const position = SEAT_POSITION[offset]!;
+          const justWon = trickComplete && seatIndex === trickWinnerIndex;
+          return (
+            <PlayerSlot
+              key={seatIndex}
+              player={p}
+              position={position}
+              isTurn={phase === 'PLAYING_TRICK' && turnIndex === seatIndex && !trickComplete}
+              isSelf={seatIndex === viewerSeatIndex}
+              isKozelHolder={kozelPlayerIndex === seatIndex}
+              isTrickWinner={trickComplete && trickWinnerIndex === seatIndex}
+              tricksWon={p.tricksWon + (justWon ? 1 : 0)}
+              justWonTrick={justWon}
             />
-          )}
+          );
+        })}
 
-          {phase === 'ROUND_END' && <RoundEndPanel players={players} multiplier={multiplier} onNextRound={() => nextRound()} />}
-
-          {phase === 'GAME_OVER' && <GameOverPanel players={players} losers={gameState.losers} onLeave={() => leaveRoom()} />}
-
-          {(phase === 'PLAYING_TRICK' || phase === 'DECLARING_KOZEL') && (
-            <div className="hand">
-              <h2>{playerName} {isMyTurn && <span className="badge">Jsi na tahu</span>}</h2>
-              <div className="hand__cards">
-                {(me.hand ?? []).map((card) => (
-                  <CardView
-                    key={`${card.suit}-${card.rank}`}
-                    card={card}
-                    disabled={!isMyTurn || !isCardValid(card)}
-                    highlight={isMyTurn && isCardValid(card)}
-                    onClick={isMyTurn && isCardValid(card) ? () => playCard(card) : undefined}
-                  />
-                ))}
-              </div>
+        <div className="trick-area">
+          {currentTrick.map((entry) => (
+            <div
+              key={entry.playerIndex}
+              className={[
+                'trick-card',
+                `trick-card--${SEAT_POSITION[(entry.playerIndex - viewerSeatIndex + 4) % 4]}`,
+                trickComplete && entry.playerIndex === trickWinnerIndex ? 'trick-card--winner' : '',
+                collecting && winnerPosition ? `trick-card--collect-${winnerPosition}` : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <CardView card={entry.card} />
             </div>
-          )}
+          ))}
+          {currentTrick.length === 0 && phase === 'PLAYING_TRICK' && <span className="muted">Čeká se na výnos…</span>}
+        </div>
 
-          {me.captured && me.captured.length > 0 && (
-            <div className="panel">
-              <button type="button" className="secondary-button" onClick={() => setShowMyTricks((v) => !v)}>
-                {showMyTricks ? 'Skrýt' : 'Zobrazit'} moje sebrané štychy ({me.captured.length})
-              </button>
-              {showMyTricks && (
-                <div className="my-tricks">
-                  {me.captured.map((trick, i) => (
-                    <div key={i} className="my-tricks__trick">
-                      <span className="muted">Štych {i + 1}:</span>
-                      {trick.map((card) => (
-                        <CardView key={`${card.suit}-${card.rank}`} card={card} size="small" />
-                      ))}
-                    </div>
+        {trickComplete && winningCard && (
+          <div className="trick-winner-banner">
+            🏆 {players[trickWinnerIndex!]!.name} sebral štych na {RANK_FULL_LABEL[winningCard.rank]} {SUIT_LABEL[winningCard.suit]}
+          </div>
+        )}
+      </div>
+
+      {phase === 'DECLARING_KOZEL' && (
+        <KozelDeclarationPanel
+          isHolder={kozelPlayerIndex === viewerSeatIndex}
+          deadline={kozelDeclarationDeadline}
+          onDeclare={declareKozel}
+        />
+      )}
+
+      {phase === 'ROUND_END' && <RoundEndPanel players={players} multiplier={multiplier} />}
+
+      {phase === 'GAME_OVER' && <GameOverPanel players={players} losers={gameState.losers} onLeave={() => leaveRoom()} />}
+
+      {(phase === 'PLAYING_TRICK' || phase === 'DECLARING_KOZEL') && (
+        <div className="hand">
+          <h2>{playerName} {isMyTurn && <span className="badge">Jsi na tahu</span>}</h2>
+          <div className="hand__cards">
+            {(me.hand ?? []).map((card) => (
+              <CardView
+                key={`${card.suit}-${card.rank}`}
+                card={card}
+                disabled={!isMyTurn || !isCardValid(card)}
+                highlight={isMyTurn && isCardValid(card)}
+                onClick={isMyTurn && isCardValid(card) ? () => playCard(card) : undefined}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {me.captured && me.captured.length > 0 && (
+        <div className="panel">
+          <button type="button" className="secondary-button" onClick={() => setShowMyTricks((v) => !v)}>
+            {showMyTricks ? 'Skrýt' : 'Zobrazit'} moje sebrané štychy ({me.captured.length})
+          </button>
+          {showMyTricks && (
+            <div className="my-tricks">
+              {me.captured.map((trick, i) => (
+                <div key={i} className="my-tricks__trick">
+                  <span className="muted">Štych {i + 1}:</span>
+                  {trick.map((card) => (
+                    <CardView key={`${card.suit}-${card.rank}`} card={card} size="small" />
                   ))}
                 </div>
-              )}
+              ))}
             </div>
           )}
         </div>
+      )}
 
-        <Sidebar
-          players={players}
-          viewerSeatIndex={viewerSeatIndex}
-          turnIndex={phase === 'PLAYING_TRICK' && !trickComplete ? turnIndex : null}
-        />
-      </div>
+      <Standings
+        players={players}
+        viewerSeatIndex={viewerSeatIndex}
+        turnIndex={phase === 'PLAYING_TRICK' && !trickComplete ? turnIndex : null}
+        roundHistory={roundHistory}
+        currentRoundNumber={gameState.roundNumber}
+        showCurrentRound={difficulty === 'EASY' && (phase === 'PLAYING_TRICK' || phase === 'DECLARING_KOZEL')}
+      />
     </div>
   );
 }
@@ -252,44 +264,68 @@ function PlayerSlot({
   );
 }
 
-function Sidebar({
+function Standings({
   players,
   viewerSeatIndex,
   turnIndex,
+  roundHistory,
+  currentRoundNumber,
+  showCurrentRound,
 }: {
   players: ClientPlayerView[];
   viewerSeatIndex: number;
   turnIndex: number | null;
+  roundHistory: RoundHistoryEntry[];
+  currentRoundNumber: number;
+  showCurrentRound: boolean;
 }) {
-  const ranked = [...players].sort((a, b) => b.totalScore - a.totalScore);
   return (
-    <aside className="sidebar">
+    <div className="standings panel">
       <h2>Pořadí hráčů</h2>
-      <table className="sidebar__table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Hráč</th>
-            <th>Kolo</th>
-            <th>Celkem</th>
-          </tr>
-        </thead>
-        <tbody>
-          {ranked.map((p, rank) => (
-            <tr key={p.seatIndex} className={p.seatIndex === turnIndex ? 'sidebar__row--turn' : ''}>
-              <td>{rank + 1}.</td>
-              <td>
-                {p.name}
-                {p.seatIndex === viewerSeatIndex && ' (ty)'}
-                {p.isBot && ' 🤖'}
-              </td>
-              <td>{p.roundScore ?? '?'}</td>
-              <td>{p.totalScore}</td>
+      <div className="standings__scroll">
+        <table className="standings__table">
+          <thead>
+            <tr>
+              <th>Kolo</th>
+              {players.map((p) => (
+                <th key={p.seatIndex} className={p.seatIndex === turnIndex ? 'standings__th--turn' : ''}>
+                  {p.name}
+                  {p.seatIndex === viewerSeatIndex && <span className="standings__you-tag"> (ty)</span>}
+                  {p.isBot && <span className="standings__bot-tag"> 🤖</span>}
+                </th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </aside>
+          </thead>
+          <tbody>
+            {roundHistory.map((entry) => (
+              <tr key={entry.roundNumber}>
+                <td>
+                  {entry.roundNumber}
+                  {entry.multiplier === 2 && ' 🐐'}
+                </td>
+                {players.map((p) => (
+                  <td key={p.seatIndex}>{entry.scores[p.seatIndex]}</td>
+                ))}
+              </tr>
+            ))}
+            {showCurrentRound && (
+              <tr className="standings__row--live">
+                <td>{currentRoundNumber}</td>
+                {players.map((p) => (
+                  <td key={p.seatIndex}>{p.roundScore ?? '?'}</td>
+                ))}
+              </tr>
+            )}
+            <tr className="standings__row--total">
+              <td>Celkem</td>
+              {players.map((p) => (
+                <td key={p.seatIndex}>{p.totalScore}</td>
+              ))}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -340,15 +376,7 @@ function KozelDeclarationPanel({
   );
 }
 
-function RoundEndPanel({
-  players,
-  multiplier,
-  onNextRound,
-}: {
-  players: ClientPlayerView[];
-  multiplier: 1 | 2;
-  onNextRound: () => void;
-}) {
+function RoundEndPanel({ players, multiplier }: { players: ClientPlayerView[]; multiplier: 1 | 2 }) {
   return (
     <div className="panel panel--center">
       <h2>Konec kola {multiplier === 2 ? '(Kozel byl nahlášen · 2× body)' : ''}</h2>
@@ -370,9 +398,7 @@ function RoundEndPanel({
           ))}
         </tbody>
       </table>
-      <button type="button" onClick={onNextRound}>
-        Další kolo
-      </button>
+      <p className="muted">Další kolo začíná automaticky za chvíli…</p>
     </div>
   );
 }
