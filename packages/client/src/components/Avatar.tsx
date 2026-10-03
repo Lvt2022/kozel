@@ -6,7 +6,7 @@ export function Avatar({
   className,
 }: {
   avatarId: AvatarId | null;
-  size?: 'small' | 'normal';
+  size?: 'small' | 'normal' | 'large';
   className?: string;
 }) {
   if (!avatarId) return null;
@@ -14,7 +14,14 @@ export function Avatar({
     <img
       src={`/avatars/${avatarId}.png`}
       alt=""
-      className={['avatar-img', size === 'small' ? 'avatar-img--small' : '', className ?? ''].filter(Boolean).join(' ')}
+      className={[
+        'avatar-img',
+        size === 'small' ? 'avatar-img--small' : '',
+        size === 'large' ? 'avatar-img--large' : '',
+        className ?? '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
     />
   );
 }

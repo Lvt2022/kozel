@@ -405,6 +405,15 @@ button:disabled {
   gap: 6px;
 }
 
+/* Stacks the avatar above the name tag, regardless of which way .player-slot__top-row itself
+   lays out (column-reverse for most seats, row for the top seat). */
+.player-slot__identity {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
 .player-slot--bottom .player-slot__top-row,
 .player-slot--left .player-slot__top-row,
 .player-slot--right .player-slot__top-row {
@@ -886,6 +895,12 @@ button:disabled {
     padding: 4px 6px;
   }
 
+  .avatar-img--large {
+    width: 40px;
+    height: 40px;
+    border-width: 2px;
+  }
+
   .player-slot__meta {
     font-size: 0.75rem;
     gap: 2px;
@@ -1027,6 +1042,13 @@ button:disabled {
   width: 22px;
   height: 22px;
   border-width: 1px;
+}
+
+.avatar-img--large {
+  width: 64px;
+  height: 64px;
+  border-width: 3px;
+  box-shadow: 3px 3px 0 rgba(0, 0, 0, 0.5);
 }
 
 .profile-modal__label {

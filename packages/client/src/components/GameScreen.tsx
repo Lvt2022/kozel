@@ -238,14 +238,16 @@ function PlayerSlot({
         .join(' ')}
     >
       <div className="player-slot__top-row">
-        <div className="player-slot__name">
-          <Avatar avatarId={player.avatarId} size="small" />
-          {player.name}
-          {isSelf && ' (ty)'}
-          {player.isBot && ' 🤖'}
-          {!player.isBot && !player.connected && <span className="muted"> (odpojen, čeká se…)</span>}
-          {isKozelHolder && <span className="kozel-tag">🐐 Kozel</span>}
-          {isTrickWinner && <span className="trick-tag">🏆 Štych</span>}
+        <div className="player-slot__identity">
+          <Avatar avatarId={player.avatarId} size="large" className="player-slot__avatar" />
+          <div className="player-slot__name">
+            {player.name}
+            {isSelf && ' (ty)'}
+            {player.isBot && ' 🤖'}
+            {!player.isBot && !player.connected && <span className="muted"> (odpojen, čeká se…)</span>}
+            {isKozelHolder && <span className="kozel-tag">🐐 Kozel</span>}
+            {isTrickWinner && <span className="trick-tag">🏆 Štych</span>}
+          </div>
         </div>
         {tricksWon > 0 && (
           <div
